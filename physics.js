@@ -1,5 +1,10 @@
 const gravity_acceleration = 9.81;
 let time = 0;
+//clock class
+const clock = new THREE.Clock();
+
+time = clock.getElapsedTime();
+console.log(time);
 // the time shoud increase by a clock not depended on the divce processing speed!
 
 class Submarine {
@@ -28,6 +33,13 @@ class Submarine {
         else{
             this.y = this.y + this.vertical_velocity * time;
         }
+        //horizontal
+        this.propeller_power =  propeller_power;
+        this.propeller_speed = propeller_speedspeed;
+        this.drag_engine = this.propeller_power * this.propeller_speed;
+        this.resistance.x = 1/2 * this.friction_co * this.projection * this.water_density * this.velocity.x **2;
+        //for example use the vector
+        this.force = new Vector3D(this.drag_engine - this.resistance.x,this.buoyant_force - this.weight,fz)
     }
     // class Front_wings {
     //     // joud
