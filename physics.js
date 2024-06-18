@@ -55,6 +55,8 @@ class Submarine {
       this.drag_engine - this.resistance.x,
       this.buoyant_force - this.weight,
       fz
+      //thaer
+      this.rearWings = new this.RearWings(this);
     );
   }
   // class Front_wings {
@@ -83,20 +85,20 @@ class Submarine {
   RearWings = class {
     constructor(submarine) {
       this.submarine = submarine;
-      this.area = 10;
+      this.area = 10; //const for submarine
       this.angleOfAttack = 0;
-      this.liftCoefficient = 0.5;
-      this.dragCoefficient = 0.05;
+      this.liftCoefficient = 0.5; //changeable
+      this.dragCoefficient = 0.05; //changeable
       this.waterDensity = 1000;
       this.maxAngleOfAttack = 15;
     }
 
     setAngleOfAttack(angle) {
-      this.angleOfAttack = Math.max(0, Math.min(this.maxAngleOfAttack, angle));
+      this.angleOfAttack = Math.max(0, Math.min(this.maxAngleOfAttack, angle)); //i don't understand it
     }
 
     calculateLift() {
-      const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
+      const speedSquared = Math.pow(this.submarine.velocity.length(), 2); // find wether the speed should be on x axis or the magnitude of the vector
       return (
         0.5 *
         this.waterDensity *
@@ -121,7 +123,7 @@ class Submarine {
     updateForces(deltaTime) {
       const lift = this.calculateLift();
       const drag = this.calculateDrag();
-      const thrust = this.submarine.drag_engine;
+      const thrust = this.submarine.drag_engine; //unneeded
       const netForce = this.submarine.calculateNetForce(lift, drag, thrust);
       const acceleration = this.submarine.calculateAcceleration(netForce);
       this.submarine.updateSpeed(acceleration, deltaTime);
