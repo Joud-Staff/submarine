@@ -1,11 +1,56 @@
 const gravity_acceleration = 9.81;
-let time = 0;
+// let time = 0;
 //clock class
 // const clock = new THREE.Clock();
-
 // time = clock.getElapsedTime();
-console.log(time);
 // the time shoud increase by a clock not depended on the divce processing speed!
+
+//shammout time
+//clock function
+var timer;
+var ele = document.getElementById('timer');
+
+function startTimer(){
+
+  var sec = 0;
+  var min = 0;
+  timer = setInterval(()=>{
+
+    if(sec >= 60){
+
+      sec = 0;
+      min ++;
+
+    }
+
+    if(min > 0){
+
+      if(sec < 10){
+
+        ele.innerHTML = '0' + min + ':0' + sec;
+
+      }else{
+
+      ele.innerHTML = '0' + min + ':' + sec;
+
+      }
+
+    }else if(sec >= 10){
+
+      ele.innerHTML = min + ':' + sec;
+
+    }else{
+
+    ele.innerHTML = min + ':0' + sec;
+
+    }
+    sec ++;
+
+  }, 1000)
+
+}
+
+startTimer();
 
 class Submarine {
   constructor(volume, water_density, mass, radius) {
@@ -33,8 +78,7 @@ class Submarine {
       this.position.y =
         (this.position.y +
           this.velocity.y * time +
-          (1 / 2) * this.acceleration.y * time) ^
-        2;
+          (1 / 2) * this.acceleration.y * time) ** 2;
     } else {
       this.y = this.y + this.velocity.y * time;
     }
@@ -55,31 +99,31 @@ class Submarine {
       this.drag_engine - this.resistance.x,
       this.buoyant_force - this.weight,
       fz
-      //thaer
-      this.rearWings = new this.RearWings(this);
-    );
+    )
+    //thaer
+    this.rearWings = new this.RearWings(this);
   }
   // class Front_wings {
   //     // joud
 
   //     // end joud
   // }
-    calculateNetForce(lift, drag, thrust) {
-        return new Vector3D(thrust - drag, lift - this.weight, 0);
-    }
+  calculateNetForce(lift, drag, thrust) {
+    return new Vector3D(thrust - drag, lift - this.weight, 0);
+  }
 
-    calculateAcceleration(netForce) {
-        return netForce.clone().multiplyScalar(1 / this.mass);
-    }
+  calculateAcceleration(netForce) {
+    return netForce.clone().multiplyScalar(1 / this.mass);
+  }
 
-    updateSpeed(acceleration, deltaTime) {
-        this.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
-    }
+  updateSpeed(acceleration, deltaTime) {
+    this.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
+  }
 
-    update(deltaTime) {
-        this.rearWings.updateForces(deltaTime);
-        this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
-    }
+  update(deltaTime) {
+    this.rearWings.updateForces(deltaTime);
+    this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+  }
   // class Back_wings {
   //     // Thaer
   RearWings = class {
