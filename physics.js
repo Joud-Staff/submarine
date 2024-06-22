@@ -1,10 +1,3 @@
-const gravity_acceleration = 9.81;
-// let time = 0;
-//clock class
-// const clock = new THREE.Clock();
-// time = clock.getElapsedTime();
-// the time shoud increase by a clock not depended on the divce processing speed!
-
 //shammout time
 //clock function
 var timer;
@@ -51,57 +44,73 @@ function startTimer(){
 }
 
 startTimer();
+let time = 0;
+const gravity_acceleration = 9.81;
 
 class Submarine {
-  constructor(volume, water_density, mass, radius) {
+  constructor(volume, water_density, mass, radius, propeller_efficiency, propeller_power) {
     this.position = new Vector3D(); // Submarine's position
     this.velocity = new Vector3D(); // Submarine's velocity
     this.acceleration = new Vector3D(); // Submarine's acceleration
     this.orientation = { roll: 0, pitch: 0, yaw: 0 }; // Submarine's orientation in radians
-    // this.dragCoefficient = 0.05; // Drag coefficient //unused for now
-    //init status
-    // this.vertical_acceleration = 0; //not needed
-    // this.vertical_velocity = 0;
-    // this.y = 0;
+
     //my attributes
     this.volume = volume;
     this.water_density = water_density;
     this.mass = mass;
     this.radius = radius;
     this.weight = this.mass * gravity_acceleration;
-    this.buoyant_force =
-      this.volume * this.water_density * gravity_acceleration;
-    // this.vertical_force = this.buoyant_force - this.weight; //unneeded
-    this.acceleration.y = this.vertical_force / this.mass;
-    if (this.acceleration.y != 0) {
-      this.velocity.y = this.velocity.y + this.acceleration.y * time;
-      this.position.y =
-        (this.position.y +
-          this.velocity.y * time +
-          (1 / 2) * this.acceleration.y * time) ** 2;
-    } else {
-      this.y = this.y + this.velocity.y * time;
-    }
-    //requirments for horizontal
+    this.buoyant_force = this.volume * this.water_density * gravity_acceleration;
+    // Horizontal movement requirements
     this.projection = 2 * Math.PI * radius;
+    this.friction_co = 0.05; // Assuming a default friction coefficient
     //horizontal
     this.propeller_power = propeller_power;
     this.propeller_speed = propeller_speedspeed;
-    this.drag_engine = this.propeller_power * this.propeller_speed;
-    this.resistance.x =
-      (1 / 2) *
-      this.friction_co *
-      this.projection *
-      this.water_density *
-      this.velocity.x ** 2;
-    //for example use the vector
-    this.force = new Vector3D(
-      this.drag_engine - this.resistance.x,
-      this.buoyant_force - this.weight,
-      fz
-    )
-    //thaer
+    this.propeller_efficiency = propeller_efficiency;
+    let velocityX = this.submarine.velocity.x || 1; // Prevent division by zero
+    this.thrust = (this.propeller_power * this.propeller_efficiency) / velocityX;
+    this.drag = (1 / 2) * this.friction_co * this.projection * this.water_density * this.velocity.x ** 2;
+
+    //for projecting force
+     //for example
+    this.angleOfHorizont = Math.PI / 4 // the angle between the submarine x axis and the world x axis (the horizont)
+    this.angleAlfa = Math.PI / 4 // the angle between the sumarine x axis and the world z axis
+     //end example
+    this.object_force_x = this.thrust - this.drag; // the force along the submarine x axis
+
     this.rearWings = new this.RearWings(this);
+
+    this.lift = this.rearWings.lift + this.frontWings.lift;
+
+    this.force = new Vector3D(this.object_force_x * Math.cos(this.angleOfHorizont),
+     this.buoyant_force - this.weight + this.object_force_x * Math.sin(this.angleOfHorizont) + this.lift, 
+     this.object_force_x * Math.cos(this.angleAlfa));
+
+    this.acceleration = this.force / this.mass;
+    // the motion
+    if (this.acceleration.x != 0) {
+      this.velocity.x = this.velocity.x + this.acceleration.x * time;
+      this.position.x = this.position.x + this.velocity.x * time + (1 / 2) * this.acceleration.x * time ** 2;
+    } else {
+      this.position.x = this.position.x + this.velocity.x * time;
+    }
+
+    if (this.acceleration.y != 0) {
+      this.velocity.y = this.velocity.y + this.acceleration.y * time;
+      this.position.y = this.position.y + this.velocity.y * time + (1 / 2) * this.acceleration.y * time ** 2;
+    } else {
+      this.position.y = this.position.y + this.velocity.y * time;
+    }
+
+    if (this.acceleration.z != 0) {
+      this.velocity.z = this.velocity.z + this.acceleration.z * time;
+      this.position.z = this.position.z + this.velocity.z * time + (1 / 2) * this.acceleration.z * time ** 2;
+    } else {
+      this.position.z = this.position.z + this.velocity.z * time;
+    }
+    
+    
   }
   // class Front_wings {
   //     // joud
