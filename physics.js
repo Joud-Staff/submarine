@@ -1,5 +1,6 @@
 //shammout time
 //clock function
+
 var timer;
 var ele = document.getElementById('timer');
 var sec = 0;
@@ -17,6 +18,8 @@ function startTimer() {
 }
 
 startTimer();
+
+
 const gravity_acceleration = 9.81;
 
 class Submarine {
@@ -42,6 +45,7 @@ class Submarine {
 
     this.projection = 2 * Math.PI * radius;
     this.friction_co = 0.05; // Assuming a default friction coefficient
+
     //horizontal
 
     this.propeller_power = propeller_power;
@@ -52,11 +56,14 @@ class Submarine {
     this.drag = (1 / 2) * this.friction_co * this.projection * this.water_density * this.velocity.x ** 2;
 
     //for projecting force
-    //for example
+
+      //for example
 
     this.angleOfHorizont = Math.PI / 4 // the angle between the submarine x axis and the world x axis (the horizont)
     this.angleAlfa = Math.PI / 4 // the angle between the sumarine x axis and the world z axis
-    //end example
+
+      //end example
+
     this.object_force_x = this.thrust - this.drag; // the force along the submarine x axis
 
     this.rearWings = new this.RearWings(this);
@@ -106,8 +113,9 @@ class Submarine {
 
 
   }
-  // class Front_wings {
-  //     // joud
+  
+  // joud
+
   FrontWings = class {
 
     constructor(submarine) {
@@ -178,8 +186,12 @@ class Submarine {
 
     }
   };
-  //     // end joud
-  // }
+
+  // end joud
+
+
+  //     // Thaer
+
   calculateNetForce(lift, drag, thrust) {
 
     return new Vector3D(thrust - drag, lift - this.weight, 0);
@@ -205,8 +217,7 @@ class Submarine {
     this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
 
   }
-  // class Back_wings {
-  //     // Thaer
+
   RearWings = class {
 
     constructor(submarine) {
@@ -278,8 +289,8 @@ class Submarine {
     }
   };
   //     //end Thaer
-  // }
-  // class Rudder {
+
+
   //     //Sera
   Rudder = class {
 
@@ -287,7 +298,7 @@ class Submarine {
 
       this.rudderAngle = 0;
       this.speed = 0;
-      this.k = 1;           // Proportional constant (k) for the specific ship
+      this.k = 1;  // Proportional constant (k) for the specific ship
 
     }
 
@@ -317,6 +328,8 @@ class Submarine {
     }
   }
   //     //end Sera
-  // }
+
+
   // //ashraf & shammout
+
 }
