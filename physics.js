@@ -1,3 +1,5 @@
+import { b } from 'vite';
+
 //shammout time
 //clock function
 
@@ -26,7 +28,7 @@ class Submarine {
 
   // //ashraf & shammout
 
-  constructor(volume, water_density, mass, radius, length, propeller_efficiency, propeller_power) {
+  constructor(volume, water_density, mass, radius, length, propellerEfficiency) {
 
     this.position = new Vector3D(); // Submarine's position
     this.velocity = new Vector3D(); // Submarine's velocity
@@ -39,7 +41,7 @@ class Submarine {
     this.radius = radius;
     this.length = length;
     this.weight = this.mass * gravity_acceleration;
-    this.buoyant_force = this.volume * this.water_density * gravity_acceleration;
+    this.buoyant_force = this.calculateBuoyantForce();
 
     // Horizontal movement requirements
 
@@ -48,10 +50,10 @@ class Submarine {
 
     //horizontal
 
-    this.propeller_power = propeller_power;
+    this.propeller_power = 0;
     this.propeller_speed = propeller_speed;
-    this.propeller_efficiency = propeller_efficiency;
-    this.thrust = (this.propeller_power * this.propeller_efficiency) / Math.abs(this.submarine.velocity.x || 1);    // Prevent division by zero
+    this.propellerEfficiency = propellerEfficiency;
+    this.thrust = (this.propeller_power * this.propellerEfficiency) / Math.abs(this.submarine.velocity.x || 1);    // Prevent division by zero
     this.drag = (1 / 2) * this.friction_co * this.projection * this.water_density * this.velocity.x ** 2;
 
     this.rearWings = new this.RearWings(this);
@@ -193,6 +195,22 @@ class Submarine {
     this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
   }
 
+  increasePower() {
+    this.propeller_power += 1;
+  }
+
+  decreasePower() {
+    this.propeller_power -= 1;
+  }
+  
+  increaseMass() {
+    this.mass += 1;
+  }
+
+  decreaseMass() {
+    this.mass -= 1;
+  }
+
   //thear
   update(deltaTime) {
 
@@ -210,7 +228,8 @@ class Submarine {
 
       this.submarine = submarine;
       this.area = 10; //const for submarine  // it seem incorrect // the area is the projection area propaply
-      this.angleOfAttack = 0;
+      this.angleOfAttackRight = 0; // Angle of attack for right side
+      this.angleOfAttackLeft = 0; // Angle of attack for left side
       this.liftCoefficient = 0.5; //changeable
       this.dragCoefficient = 0.05; //changeable
       this.waterDensity = 1000;
@@ -224,43 +243,60 @@ class Submarine {
 
     }
 
-    calculateLift() {
-
+    calculateRightLift() {
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2); // find wether the speed should be on x axis or the magnitude of the vector
       return (
         0.5 *
         this.waterDensity *
         speedSquared *
-        this.area *
-        this.liftCoefficient *
+        this.area * //projection area of the right wing
+        (this.liftCoefficient/2) *
         Math.sin((this.angleOfAttack * Math.PI) / 180)
-      );
-
-    }
-
-    calculateRightLift() {
-      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
-    }
+      );    }
 
     calculateLeftLift() {
-      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
-    }
+      const speedSquared = Math.pow(this.submarine.velocity.length(), 2); // find wether the speed should be on x axis or the magnitude of the vector
+      return (
+        0.5 *
+        this.waterDensity *
+        speedSquared *
+        this.area * //projection area of the left wing
+        (this.liftCoefficient/2) *
+        Math.sin((this.angleOfAttack * Math.PI) / 180)
+      );    }
 
     calculateTotalLift() {
-      return this.calculateLift();
+      return this.calculateLeftLift + this.calculateRightLift;
     }
 
-    calculateDrag() {
+    calculateLeftDrag() {
 
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
       return (
         0.5 *
         this.waterDensity *
         speedSquared *
-        this.area *
-        this.dragCoefficient
+        this.area * //projection area of the left wing
+        (this.dragCoefficient/2)
       );
 
+    }
+
+    calculateRightDrag() {
+
+      const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
+      return (
+        0.5 *
+        this.waterDensity *
+        speedSquared *
+        this.area * //projection area of the right wing
+        (this.dragCoefficient/2)
+      );
+
+    }
+
+    calculateTotalDrag() {
+      return this.calculateLeftDrag + this.calculateRightDrag;
     }
 
     updateForces(deltaTime) {
@@ -297,6 +333,55 @@ class Submarine {
       const rollTorque = this.calculateLift() * Math.sin(rollAngle * (Math.PI / 180)); // Assuming the lift force contributes to roll torque
       return { rollAngle, rollTorque };
     }
+
+    // Increase angle of attack for the right side of front wings
+  increaseAngleOfAttackRight() {
+    this.angleOfAttackRight += 0.1;
+    if (this.angleOfAttackRight > this.maxAngleOfAttack) {
+      this.angleOfAttackRight = this.maxAngleOfAttack;
+    }
+  }
+
+  // Decrease angle of attack for the right side of front wings
+  decreaseAngleOfAttackRight() {
+    this.angleOfAttackRight -= 0.1;
+    if (this.angleOfAttackRight < 0) {
+      this.angleOfAttackRight = 0;
+    }
+  }
+
+  // Increase angle of attack for the left side of front wings
+  increaseAngleOfAttackLeft() {
+    this.angleOfAttackLeft += 0.1;
+    if (this.angleOfAttackLeft > this.maxAngleOfAttack) {
+      this.angleOfAttackLeft = this.maxAngleOfAttack;
+    }
+  }
+
+  // Decrease angle of attack for the left side of front wings
+  decreaseAngleOfAttackLeft() {
+    this.angleOfAttackLeft -= 0.1;
+    if (this.angleOfAttackLeft < 0) {
+      this.angleOfAttackLeft = 0;
+    }
+  }
+
+   // Increase angle of attack for both right and left wings simultaneously
+   increaseAngleOfAttack() {
+    this.angleOfAttack.right += 0.1;
+    this.angleOfAttack.left += 0.1;
+    this.angleOfAttack.right = Math.min(this.angleOfAttack.right, this.maxAngleOfAttack);
+    this.angleOfAttack.left = Math.min(this.angleOfAttack.left, this.maxAngleOfAttack);
+  }
+
+  // Decrease angle of attack for both right and left wings simultaneously
+  decreaseAngleOfAttack() {
+    this.angleOfAttack.right -= 0.1;
+    this.angleOfAttack.left -= 0.1;
+    this.angleOfAttack.right = Math.max(this.angleOfAttack.right, 0);
+    this.angleOfAttack.left = Math.max(this.angleOfAttack.left, 0);
+  }
+
   };
 
   // end joud
@@ -311,7 +396,8 @@ class Submarine {
 
       this.submarine = submarine;
       this.area = 10; //const for submarine  // it seem incorrect // the area is the projection area propaply
-      this.angleOfAttack = 0;
+      this.angleOfAttackRight = 0; // Angle of attack for right side
+      this.angleOfAttackLeft = 0; // Angle of attack for left side
       this.liftCoefficient = 0.5; //changeable
       this.dragCoefficient = 0.05; //changeable
       this.waterDensity = 1000;
@@ -325,43 +411,60 @@ class Submarine {
 
     }
 
-    calculateLift() {
-
+    calculateRightLift() {
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2); // find wether the speed should be on x axis or the magnitude of the vector
       return (
         0.5 *
         this.waterDensity *
         speedSquared *
-        this.area *
-        this.liftCoefficient *
+        this.area * //projection area of the right wing
+        (this.liftCoefficient/2) *
         Math.sin((this.angleOfAttack * Math.PI) / 180)
-      );
-
-    }
-
-    calculateRightLift() {
-      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
-    }
+      );    }
 
     calculateLeftLift() {
-      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
-    }
+      const speedSquared = Math.pow(this.submarine.velocity.length(), 2); // find wether the speed should be on x axis or the magnitude of the vector
+      return (
+        0.5 *
+        this.waterDensity *
+        speedSquared *
+        this.area * //projection area of the left wing
+        (this.liftCoefficient/2) *
+        Math.sin((this.angleOfAttack * Math.PI) / 180)
+      );    }
 
     calculateTotalLift() {
-      return this.calculateLift();
+      return this.calculateLeftLift + this.calculateRightLift;
     }
 
-    calculateDrag() {
+    calculateLeftDrag() {
 
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
       return (
         0.5 *
         this.waterDensity *
         speedSquared *
-        this.area *
-        this.dragCoefficient
+        this.area * //projection area of the left wing
+        (this.dragCoefficient/2)
       );
 
+    }
+
+    calculateRightDrag() {
+
+      const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
+      return (
+        0.5 *
+        this.waterDensity *
+        speedSquared *
+        this.area * //projection area of the right wing
+        (this.dragCoefficient/2)
+      );
+
+    }
+
+    calculateTotalDrag() {
+      return this.calculateLeftDrag + this.calculateRightDrag;
     }
 
     updateForces(deltaTime) {
@@ -396,6 +499,55 @@ class Submarine {
       const rollTorque = this.calculateLift() * Math.sin(rollAngle * (Math.PI / 180)); // Assuming the lift force contributes to roll torque
       return { rollAngle, rollTorque };
     }
+
+   // Increase angle of attack for the right side of rear wings
+  increaseAngleOfAttackRight() {
+    this.angleOfAttackRight += 0.1;
+    if (this.angleOfAttackRight > this.maxAngleOfAttack) {
+      this.angleOfAttackRight = this.maxAngleOfAttack;
+    }
+  }
+
+  // Decrease angle of attack for the right side of rear wings
+  decreaseAngleOfAttackRight() {
+    this.angleOfAttackRight -= 0.1;
+    if (this.angleOfAttackRight < 0) {
+      this.angleOfAttackRight = 0;
+    }
+  }
+
+  // Increase angle of attack for the left side of rear wings
+  increaseAngleOfAttackLeft() {
+    this.angleOfAttackLeft += 0.1;
+    if (this.angleOfAttackLeft > this.maxAngleOfAttack) {
+      this.angleOfAttackLeft = this.maxAngleOfAttack;
+    }
+  }
+
+  // Decrease angle of attack for the left side of rear wings
+  decreaseAngleOfAttackLeft() {
+    this.angleOfAttackLeft -= 0.1;
+    if (this.angleOfAttackLeft < 0) {
+      this.angleOfAttackLeft = 0;
+    }
+  }
+
+  // Increase angle of attack for both right and left wings simultaneously
+  increaseAngleOfAttack() {
+    this.angleOfAttack.right += 0.1;
+    this.angleOfAttack.left += 0.1;
+    this.angleOfAttack.right = Math.min(this.angleOfAttack.right, this.maxAngleOfAttack);
+    this.angleOfAttack.left = Math.min(this.angleOfAttack.left, this.maxAngleOfAttack);
+  }
+
+  // Decrease angle of attack for both right and left wings simultaneously
+  decreaseAngleOfAttack() {
+    this.angleOfAttack.right -= 0.1;
+    this.angleOfAttack.left -= 0.1;
+    this.angleOfAttack.right = Math.max(this.angleOfAttack.right, 0);
+    this.angleOfAttack.left = Math.max(this.angleOfAttack.left, 0);
+  }
+
   };
   //     //end Thaer
 
@@ -435,7 +587,95 @@ class Submarine {
       const yawRate = this.calculateYawRate();
       return yawRate * sec;
     }
+
+    toRight() {
+      this.rudderAngle += 0.1;
+    }
+
+    toLeft() {
+      this.rudderAngle -= 0.1;
+    }
   }
   //     //end Sera
   
 }
+
+// Assuming 'submarine' is an instance of your Submarine class
+
+// Function to handle keydown events
+function handleKeyDown(event) {
+  switch (event.key) {
+    case 'ArrowUp':
+      submarine.increasePower();
+      break;
+    case 'ArrowDown':
+      submarine.decreasePower();
+      break;
+    case 'ArrowLeft':
+      submarine.rudder.toLeft();
+      break;
+    case 'ArrowRight':
+      submarine.rudder.toRight();
+      break;
+
+    //tanks
+    case 'm':
+      submarine.increaseMass();
+      break;
+    case 'n':
+      submarine.decreaseMass();
+      break;
+
+    //front
+    case 'w':
+      submarine.frontWings.increaseAngleOfAttack();
+      break;
+    case 's':
+      submarine.frontWings.decreaseAngleOfAttack();
+      break;
+    case 'q':
+      submarine.frontWings.increaseAngleOfAttackLeft();
+      break;
+    case 'a':
+      submarine.frontWings.decreaseAngleOfAttackLeft();
+      break;
+    case 'e':
+      submarine.frontWings.increaseAngleOfAttackRight();
+      break;
+    case 'd':
+      submarine.frontWings.decreaseAngleOfAttackRight();
+      break;
+
+    //rear
+    case 'i':
+      submarine.rearWings.increaseAngleOfAttack();
+      break;
+    case 'k':
+      submarine.rearWings.decreaseAngleOfAttack();
+      break;
+    case 'u':
+      submarine.rearWings.increaseAngleOfAttackLeft();
+      break;
+    case 'j':
+      submarine.rearWings.decreaseAngleOfAttackLeft();
+      break;
+    case 'o':
+      submarine.rearWings.increaseAngleOfAttackRight();
+      break;
+    case 'l':
+      submarine.rearWings.decreaseAngleOfAttackRight();
+      break;
+    // Add more cases for other keys as needed
+  }
+}
+
+// Function to handle keyup events (if necessary)
+function handleKeyUp(event) {
+  // Add handling for keyup events if you need to stop certain actions when keys are released
+}
+
+// Event listener to listen for keydown events
+document.addEventListener('keydown', handleKeyDown);
+
+// Event listener to listen for keyup events (if needed)
+document.addEventListener('keyup', handleKeyUp);
