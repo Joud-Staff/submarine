@@ -24,14 +24,14 @@ const gravity_acceleration = 9.81;
 
 class Submarine {
 
+  // //ashraf & shammout
+
   constructor(volume, water_density, mass, radius, length, propeller_efficiency, propeller_power) {
 
     this.position = new Vector3D(); // Submarine's position
     this.velocity = new Vector3D(); // Submarine's velocity
     this.acceleration = new Vector3D(); // Submarine's acceleration
     this.orientation = { roll: 0, pitch: 0, yaw: 0 }; // Submarine's orientation in radians
-
-    //my attributes
 
     this.volume = volume;
     this.water_density = water_density;
@@ -49,12 +49,16 @@ class Submarine {
     //horizontal
 
     this.propeller_power = propeller_power;
-    this.propeller_speed = propeller_speedspeed;
+    this.propeller_speed = propeller_speed;
     this.propeller_efficiency = propeller_efficiency;
-    let velocityX = this.submarine.velocity.x || 1; // Prevent division by zero
-    this.thrust = (this.propeller_power * this.propeller_efficiency) / velocityX.length();
+    this.thrust = (this.propeller_power * this.propeller_efficiency) / Math.abs(this.submarine.velocity.x || 1);    // Prevent division by zero
     this.drag = (1 / 2) * this.friction_co * this.projection * this.water_density * this.velocity.x ** 2;
 
+    this.rearWings = new this.RearWings(this);
+    this.frontWings = new this.FrontWings(this);
+    this.rudder = new this.Rudder(this);
+
+    this.updateForceAndAcceleration();
     //for projecting force
 
       //for example
@@ -66,7 +70,6 @@ class Submarine {
 
     this.object_force_x = this.thrust - this.drag; // the force along the submarine x axis
 
-    this.rearWings = new this.RearWings(this);
 
     this.lift = this.rearWings.lift + this.frontWings.lift;
 
@@ -113,7 +116,92 @@ class Submarine {
 
 
   }
-  
+
+  updateForceAndAcceleration() {
+    this.object_force_x = this.thrust - this.drag;
+    this.lift = this.rearWings.calculateLift() + this.frontWings.calculateLift();
+    this.force = new Vector3D(
+      this.object_force_x * Math.cos(this.angleOfHorizont),
+      this.buoyant_force - this.weight + this.object_force_x * Math.sin(this.angleOfHorizont) + this.lift,
+      this.object_force_x * Math.cos(this.angleAlfa)
+    );
+
+    this.acceleration = this.force.clone().multiplyScalar(1 / this.mass);
+  }
+
+  calculateBuoyantForce() {
+    return this.volume * this.waterDensity * gravityAcceleration;
+  }
+
+  calculateNetForce() { //unfinished
+        return new Vector3D(this.object_force_x * Math.cos(this.angleOfHorizont),
+        this.buoyant_force - this.weight + this.object_force_x * Math.sin(this.angleOfHorizont) + this.lift,
+        this.object_force_x * Math.cos(this.angleAlfa));
+  }
+
+  calculateAcceleration(netForce) {
+    return netForce.clone().multiplyScalar(1 / this.mass);
+  }
+
+  updateSpeed(acceleration, deltaTime) {
+    this.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
+  }
+
+  // Calculate yaw, pitch, and roll
+  calculateOrientation() {
+    const yaw = Math.atan2(this.velocity.z, this.velocity.x) * (180 / Math.PI);
+    const pitch = Math.atan2(this.velocity.y, Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2)) * (180 / Math.PI);
+
+    // Calculate roll based on the difference in lift forces between right and left wings
+    const frontRightLift = this.frontWings.calculateRightLift();
+    const frontLeftLift = this.frontWings.calculateLeftLift();
+    const rearRightLift = this.rearWings.calculateRightLift();
+    const rearLeftLift = this.rearWings.calculateLeftLift();
+
+    const totalLift = frontRightLift + frontLeftLift + rearRightLift + rearLeftLift;
+    const roll = Math.atan2((frontRightLift + rearRightLift) - (frontLeftLift + rearLeftLift), totalLift) * (180 / Math.PI);
+
+    this.orientation = { yaw, pitch, roll };
+  }
+
+  updatePhysics(deltaTime) {  //unfinished
+    const buoyantForce = this.calculateBuoyantForce();
+    const netVerticalForce = buoyantForce - this.weight;
+    const verticalAcceleration = netVerticalForce / this.mass;
+
+    // Update vertical motion
+    this.velocity.y += verticalAcceleration * deltaTime;
+    this.position.y += this.velocity.y * deltaTime + 0.5 * verticalAcceleration * deltaTime * deltaTime;
+
+    // Update forces from wings and rudder
+    this.frontWings.updateForces(deltaTime);
+    this.rearWings.updateForces(deltaTime);
+    this.rudder.updateForces(deltaTime);
+
+    // Update orientation based on forces
+    this.orientation.pitch += (this.frontWings.calculateLift() - this.rearWings.calculateLift()) * deltaTime;
+    this.orientation.yaw += this.rudder.calculateYawForce() * deltaTime;
+
+    // Apply drag force
+    const drag = this.velocity.length() * this.dragCoefficient;
+    const dragForce = this.velocity.clone().normalize().multiplyScalar(-drag);
+    const netForce = this.calculateNetForce(0, drag, this.propellerPower * this.propellerSpeed);
+    const acceleration = this.calculateAcceleration(netForce);
+
+    // Update horizontal motion
+    this.updateSpeed(acceleration, deltaTime);
+    this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+  }
+
+  //thear
+  update(deltaTime) {
+
+    this.rearWings.updateForces(deltaTime);
+    this.frontWings.updateForces(deltaTime);
+    this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+
+  }
+
   // joud
 
   FrontWings = class {
@@ -150,6 +238,18 @@ class Submarine {
 
     }
 
+    calculateRightLift() {
+      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
+    }
+
+    calculateLeftLift() {
+      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
+    }
+
+    calculateTotalLift() {
+      return this.calculateLift();
+    }
+
     calculateDrag() {
 
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
@@ -185,6 +285,18 @@ class Submarine {
       );
 
     }
+
+    get_pitch_control() {
+      const pitchAngle = Math.atan2(this.submarine.velocity.z, this.submarine.velocity.x) * (180 / Math.PI);
+      const pitchTorque = this.calculateLift() * Math.cos(pitchAngle * (Math.PI / 180)); // Assuming the lift force contributes to pitch torque
+      return { pitchAngle, pitchTorque };
+    }
+
+    get_roll_control() {
+      const rollAngle = Math.atan2(this.submarine.velocity.y, this.submarine.velocity.x) * (180 / Math.PI);
+      const rollTorque = this.calculateLift() * Math.sin(rollAngle * (Math.PI / 180)); // Assuming the lift force contributes to roll torque
+      return { rollAngle, rollTorque };
+    }
   };
 
   // end joud
@@ -192,31 +304,6 @@ class Submarine {
 
   //     // Thaer
 
-  calculateNetForce(lift, drag, thrust) {
-
-    return new Vector3D(thrust - drag, lift - this.weight, 0);
-
-  }
-
-  calculateAcceleration(netForce) {
-
-    return netForce.clone().multiplyScalar(1 / this.mass);
-
-
-  }
-
-  updateSpeed(acceleration, deltaTime) {
-
-    this.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
-
-  }
-
-  update(deltaTime) {
-
-    this.rearWings.updateForces(deltaTime);
-    this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
-
-  }
 
   RearWings = class {
 
@@ -252,6 +339,18 @@ class Submarine {
 
     }
 
+    calculateRightLift() {
+      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
+    }
+
+    calculateLeftLift() {
+      return this.calculateLift() / 2; // Assuming symmetrical lift distribution
+    }
+
+    calculateTotalLift() {
+      return this.calculateLift();
+    }
+
     calculateDrag() {
 
       const speedSquared = Math.pow(this.submarine.velocity.length(), 2);
@@ -269,8 +368,7 @@ class Submarine {
 
       const lift = this.calculateLift();
       const drag = this.calculateDrag();
-      const thrust = this.submarine.thrust; //unneeded
-      const netForce = this.submarine.calculateNetForce(lift, drag, thrust);
+      const netForce = this.submarine.calculateNetForce(lift, drag, submarine.thrust /*i don't know if needed*/ );
       const acceleration = this.submarine.calculateAcceleration(netForce);
       this.submarine.updateSpeed(acceleration, deltaTime);
 
@@ -285,7 +383,18 @@ class Submarine {
         0,
         Math.min(this.maxAngleOfAttack, this.angleOfAttack)
       );
+    }
 
+    get_pitch_control() {
+      const pitchAngle = Math.atan2(this.submarine.velocity.z, this.submarine.velocity.x) * (180 / Math.PI);
+      const pitchTorque = this.calculateLift() * Math.cos(pitchAngle * (Math.PI / 180)); // Assuming the lift force contributes to pitch torque
+      return { pitchAngle, pitchTorque };
+    }
+
+    get_roll_control() {
+      const rollAngle = Math.atan2(this.submarine.velocity.y, this.submarine.velocity.x) * (180 / Math.PI);
+      const rollTorque = this.calculateLift() * Math.sin(rollAngle * (Math.PI / 180)); // Assuming the lift force contributes to roll torque
+      return { rollAngle, rollTorque };
     }
   };
   //     //end Thaer
@@ -294,7 +403,7 @@ class Submarine {
   //     //Sera
   Rudder = class {
 
-    constructor() {
+    constructor(submarine) {
 
       this.rudderAngle = 0;
       this.speed = 0;
@@ -328,8 +437,5 @@ class Submarine {
     }
   }
   //     //end Sera
-
-
-  // //ashraf & shammout
-
+  
 }
